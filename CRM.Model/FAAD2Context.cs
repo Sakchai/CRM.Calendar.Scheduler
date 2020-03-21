@@ -17,7 +17,9 @@ namespace CRM.Model
         }
 
         public virtual DbSet<CrmActivity> CrmActivities { get; set; }
+        public virtual DbSet<CrmActivityFollower> CrmActivityFollowers { get; set; }
         public virtual DbSet<SmEmployee> SmEmployees { get; set; }
+        public virtual DbSet<SmEnum> SmEnums { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -35,14 +37,8 @@ namespace CRM.Model
             {
                 entity.HasKey(e => e.ActivityId)
                     .HasName("PK__crmActiv__45F4A7F148398B79");
-                //entity.HasKey(e => e.Id)
-                //     .HasName("PK__crmActiv__45F4A7F148398B79");
-                entity.ToTable("crmActivity");
 
-                //entity.Property(e => e.Id)
-                //    .HasColumnName("ActivityID")
-                //    .HasMaxLength(50)
-                //    .ValueGeneratedNever();
+                entity.ToTable("crmActivity");
 
                 entity.Property(e => e.ActivityId)
                     .HasColumnName("ActivityID")
@@ -130,13 +126,49 @@ namespace CRM.Model
                     .HasMaxLength(50);
 
                 entity.Property(e => e.Topic).HasMaxLength(255);
-                //entity.Ignore(e => e.Id);
+                entity.Ignore(e => e.PriorityEnumName);
+                entity.Ignore(e => e.StatusEnumName);
+                entity.Ignore(e => e.StartDateTime);
+                entity.Ignore(e => e.EndDateTime);
+
+            });
+
+            modelBuilder.Entity<CrmActivityFollower>(entity =>
+            {
+                entity.HasKey(e => e.ActivityFollowerId)
+                    .HasName("PK__crmActiv__C9B566D164B974E2");
+
+                entity.ToTable("crmActivityFollower");
+
+                entity.Property(e => e.ActivityFollowerId)
+                    .HasColumnName("ActivityFollowerID")
+                    .HasMaxLength(50)
+                    .ValueGeneratedNever();
+
+                entity.Property(e => e.ActivityId)
+                    .HasColumnName("ActivityID")
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.CreatedById)
+                    .HasColumnName("CreatedByID")
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.CreatedDate).HasColumnType("datetime");
+
+                entity.Property(e => e.EmpId)
+                    .HasColumnName("EmpID")
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.ModifiedById)
+                    .HasColumnName("ModifiedByID")
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.ModifiedDate).HasColumnType("datetime");
             });
 
             modelBuilder.Entity<SmEmployee>(entity =>
             {
                 entity.HasKey(e => e.EmpId);
-                //entity.HasKey(e => e.Id);
 
                 entity.ToTable("smEmployee");
 
@@ -144,10 +176,7 @@ namespace CRM.Model
                     .HasColumnName("EmpID")
                     .HasMaxLength(50)
                     .ValueGeneratedNever();
-                //entity.Property(e => e.Id)
-                //    .HasColumnName("EmpID")
-                //    .HasMaxLength(50)
-                //    .ValueGeneratedNever();
+
                 entity.Property(e => e.AddrLine).HasColumnType("ntext");
 
                 entity.Property(e => e.BloodGroupEnumId)
@@ -265,7 +294,41 @@ namespace CRM.Model
                 entity.Property(e => e.WorkStatusEnumId)
                     .HasColumnName("WorkStatusEnumID")
                     .HasMaxLength(50);
-               // entity.Ignore(e => e.Id);
+            });
+
+            modelBuilder.Entity<SmEnum>(entity =>
+            {
+                entity.HasKey(e => e.EnumId);
+
+                entity.ToTable("smEnum");
+
+                entity.Property(e => e.EnumId)
+                    .HasColumnName("EnumID")
+                    .HasMaxLength(50)
+                    .ValueGeneratedNever();
+
+                entity.Property(e => e.CreatedById)
+                    .HasColumnName("CreatedByID")
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.CreatedDate).HasColumnType("datetime");
+
+                entity.Property(e => e.EnumName).HasMaxLength(255);
+
+                entity.Property(e => e.EnumNo).HasMaxLength(100);
+
+                entity.Property(e => e.EnumTypeId)
+                    .IsRequired()
+                    .HasColumnName("EnumTypeID")
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.ModifiedById)
+                    .HasColumnName("ModifiedByID")
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.ModifiedDate).HasColumnType("datetime");
+
+                entity.Property(e => e.Remark).HasColumnType("ntext");
             });
 
             OnModelCreatingPartial(modelBuilder);

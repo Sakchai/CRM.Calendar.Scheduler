@@ -8,7 +8,7 @@
    "ModelNamespace": null,
    "OutputContextPath": null,
    "OutputPath": "",
-   "ProjectRootNamespace": "FADD.Library",
+   "ProjectRootNamespace": "CRM.Model",
    "SelectedHandlebarsLanguage": 0,
    "SelectedToBeGenerated": 0,
    "Tables": [
@@ -18,7 +18,15 @@
       },
       {
          "HasPrimaryKey": true,
+         "Name": "[dbo].[crmActivityFollower]"
+      },
+      {
+         "HasPrimaryKey": true,
          "Name": "[dbo].[smEmployee]"
+      },
+      {
+         "HasPrimaryKey": true,
+         "Name": "[dbo].[smEnum]"
       }
    ],
    "UseDatabaseNames": false,

@@ -55,5 +55,9 @@ namespace CRM.Model
         public bool? IsNotiApp { get; set; }
         public bool? IsNotiEmail { get; set; }
         public string RefDocNo { get; set; }
+        public virtual string PriorityEnumName { get; set; }
+        public virtual string StatusEnumName { get; set; }
+        public virtual DateTime? StartDateTime { get { return StartDate + StartTime; } }
+        public virtual DateTime? EndDateTime { get { return EndDate + EndTime;  } }
     }
 }

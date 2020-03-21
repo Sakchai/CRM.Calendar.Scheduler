@@ -1,5 +1,6 @@
 using CRM.Model;
 using System;
+using System.Collections.Generic;
 
 namespace CRM.Services
 {
@@ -14,8 +15,9 @@ namespace CRM.Services
         /// <param name="email">Employee identifier</param>
         /// <returns>Employee</returns>
         SmEmployee GetEmployeeByEmail(string email);
-
-
+        SmEmployee GetEmployeeByID(string id);
+        SmEmployee GetEmployeeByFacebook(string facebook);
+        IList<SmEmployee> GetEmployeesList();
         /// <summary>
         /// Marks employee as deleted 
         /// </summary>

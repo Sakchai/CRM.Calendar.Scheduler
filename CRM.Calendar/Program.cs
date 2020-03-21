@@ -24,6 +24,8 @@ using Google.Apis.Util.Store;
 using System;
 using System.IO;
 using System.Threading;
+using System.Configuration;
+using System.Collections.Generic;
 
 namespace FAAD.Calendar
 {
@@ -40,7 +42,7 @@ namespace FAAD.Calendar
             UserCredential credential;
 
             using (var stream =
-                new FileStream("credentials.json", FileMode.Open, FileAccess.Read))
+                new FileStream(@"credentials\credentials.json", FileMode.Open, FileAccess.Read))
             {
                 // The file token.json stores the user's access and refresh tokens, and is created
                 // automatically when the authorization flow completes for the first time.
@@ -90,7 +92,7 @@ namespace FAAD.Calendar
                 Console.WriteLine("No upcoming events found.");
             }
 
-            CreateNewEvent(service);
+            
 
             var builder = new ContainerBuilder();
             //data layer
@@ -101,52 +103,111 @@ namespace FAAD.Calendar
             builder.RegisterGeneric(typeof(EntityRepository<>)).As(typeof(IRepository<>)).InstancePerLifetimeScope();
 
             builder.RegisterType<EmployeeService>().As<IEmployeeService>().InstancePerLifetimeScope();
+            builder.RegisterType<ActivityService>().As<IActivityService>().InstancePerLifetimeScope();
 
 
             using (var container = builder.Build())
             {
                 var employeeService = container.Resolve<IEmployeeService>();
-                var employee = employeeService.GetEmployeeByEmail("worapatn@faadtech.co.th");
-                Console.WriteLine($"{employee.Email}");
+                var activityService = container.Resolve<IActivityService>();
+                var employees = employeeService.GetEmployeesList();
+                foreach (var item in employees)
+                {
+                    var activities = activityService.GetActivityByOwner(item.EmpId);
+                    if (IsFacebookCalendarType()) {
+                        foreach (var act in activities)
+                        {
+                            var emails = activityService.GetEmailsFollowID(act.ActivityId);
+                            CreateNewEvent(service, item.Facebook, act, emails);
+                        }
+                    }
+                    else
+                    {
+                        foreach (var act in activities)
+                        {
+                            var emails = activityService.GetEmailsFollowID(act.ActivityId);
+                            CreateNewEvent(service, item.Email, act, emails);
+                        }
+                    }
+                }
             }
 
             Console.Read();
 
         }
-
-        private static void CreateNewEvent(CalendarService service)
+        private static string GetTimeZone()
         {
+            return ConfigurationManager.AppSettings["TimeZone"];
+        }
+        private static bool IsFacebookCalendarType()
+        {
+            return ConfigurationManager.AppSettings["CalendarType"].Equals("Facebook");
+        }
+
+        private static bool GetEventReminderEmail()
+        {
+            return ConfigurationManager.AppSettings["EventReminderEmail"].Equals("Y");
+        }
+        private static int GetEventReminderEmailMinutes()
+        {
+            return Int32.Parse(ConfigurationManager.AppSettings["EventReminderEmailMinutes"]);
+        }
+
+        private static bool GetEventReminderSMS()
+        {
+            return ConfigurationManager.AppSettings["EventReminderSMS"].Equals("Y");
+        }
+
+        private static int GetEventReminderSMSMinutes()
+        {
+            return Int32.Parse(ConfigurationManager.AppSettings["EventReminderSMSMinutes"]);
+        }
+
+        private static void CreateNewEvent(CalendarService service,string calendarId, CrmActivity activity, List<EventAttendee> eventAttendees )
+        {
+            //new EventAttendee[] {
+            //        new EventAttendee() { Email = "lpage@example.com" },
+            //        new EventAttendee() { Email = "sbrin@example.com" },
+            //    }
+            //new EventReminder[] {
+            //            new EventReminder() { Method = "email", Minutes = 24 * 60 },
+            //            new EventReminder() { Method = "sms", Minutes = 10 },
+            //        }
+
+            var overrides = new List<EventReminder>();
+            if (GetEventReminderEmail())
+            {
+                overrides.Add(new EventReminder { Method = "email", Minutes = GetEventReminderEmailMinutes() });
+            }
+            if (GetEventReminderSMS())
+            {
+                overrides.Add(new EventReminder { Method = "sms", Minutes = GetEventReminderSMSMinutes() });
+            }
+            string summary = $" {activity.Topic} [ความสำคัญ:{activity.PriorityEnumName}][สถานะ:{activity.StatusEnumName}] ";
             Event newEvent = new Event()
             {
-                Summary = "Google I/O 2015",
-                Location = "800 Howard St., San Francisco, CA 94103",
-                Description = "A chance to hear more about Google's developer products.",
+                Summary = summary,
+                Location = activity.RelateActName,
+                Description = activity.Detail,
                 Start = new EventDateTime()
                 {
                     DateTime = DateTime.Now.AddSeconds(-60),
-                    TimeZone = "Asia/Bangkok",
+                    TimeZone = GetTimeZone(),
                 },
                 End = new EventDateTime()
                 {
                     DateTime = DateTime.Now,
-                    TimeZone = "Asia/Bangkok",
+                    TimeZone = GetTimeZone(),
                 },
-                Recurrence = new String[] { "RRULE:FREQ=DAILY;COUNT=2" },
-                Attendees = new EventAttendee[] {
-                    new EventAttendee() { Email = "lpage@example.com" },
-                    new EventAttendee() { Email = "sbrin@example.com" },
-                },
+                Attendees = eventAttendees,
                 Reminders = new Event.RemindersData()
                 {
                     UseDefault = false,
-                    Overrides = new EventReminder[] {
-                        new EventReminder() { Method = "email", Minutes = 24 * 60 },
-                        new EventReminder() { Method = "sms", Minutes = 10 },
-                    }
+                    Overrides = overrides
                 }
             };
 
-            String calendarId = "primary";
+            //String calendarId = "primary";
             EventsResource.InsertRequest insertRequest = service.Events.Insert(newEvent, calendarId);
             Event createdEvent = insertRequest.Execute();
             Console.WriteLine("Event created: {0}", createdEvent.HtmlLink);

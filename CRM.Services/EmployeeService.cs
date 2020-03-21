@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using CRM.Model;
 
@@ -83,7 +84,31 @@ namespace CRM.Services
 
         }
 
-     
+        public SmEmployee GetEmployeeByID(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+                return null;
+
+            var query = _employeeRepository.Table;
+            return query.Where(x => x.EmpId == id).FirstOrDefault();
+        }
+
+        public SmEmployee GetEmployeeByFacebook(string facebook)
+        {
+            if (string.IsNullOrWhiteSpace(facebook))
+                return null;
+
+            var query = _employeeRepository.Table;
+            return query.Where(x => x.Facebook == facebook).FirstOrDefault();
+        }
+
+        public IList<SmEmployee> GetEmployeesList()
+        {
+            var query = _employeeRepository.Table;
+            return query.Where(x => !x.IsDelete.Value).ToList();
+        }
+
+
 
         #endregion
     }
