@@ -39,6 +39,18 @@ namespace FAAD.Calendar
 
         static void Main(string[] args)
         {
+
+            var builder = new ContainerBuilder();
+            //data layer
+            builder.RegisterType<DataProviderManager>().As<IDataProviderManager>().InstancePerDependency();
+            builder.Register(context => context.Resolve<IDataProviderManager>().DataProvider).As<IFAADDataProvider>().InstancePerDependency();
+
+            //repositories
+            builder.RegisterGeneric(typeof(EntityRepository<>)).As(typeof(IRepository<>)).InstancePerLifetimeScope();
+
+            builder.RegisterType<EmployeeService>().As<IEmployeeService>().InstancePerLifetimeScope();
+            builder.RegisterType<ActivityService>().As<IActivityService>().InstancePerLifetimeScope();
+
             UserCredential credential;
 
             using (var stream =
@@ -80,7 +92,7 @@ namespace FAAD.Calendar
                 foreach (var eventItem in events.Items)
                 {
                     string when = eventItem.Start.DateTime.ToString();
-                    if (String.IsNullOrEmpty(when))
+                    if (string.IsNullOrEmpty(when))
                     {
                         when = eventItem.Start.Date;
                     }
@@ -93,17 +105,6 @@ namespace FAAD.Calendar
             }
 
             
-
-            var builder = new ContainerBuilder();
-            //data layer
-            builder.RegisterType<DataProviderManager>().As<IDataProviderManager>().InstancePerDependency();
-            builder.Register(context => context.Resolve<IDataProviderManager>().DataProvider).As<IFAADDataProvider>().InstancePerDependency();
-
-            //repositories
-            builder.RegisterGeneric(typeof(EntityRepository<>)).As(typeof(IRepository<>)).InstancePerLifetimeScope();
-
-            builder.RegisterType<EmployeeService>().As<IEmployeeService>().InstancePerLifetimeScope();
-            builder.RegisterType<ActivityService>().As<IActivityService>().InstancePerLifetimeScope();
 
 
             using (var container = builder.Build())
