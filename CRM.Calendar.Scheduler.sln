@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29905.134
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CRM.Model", "CRM.Model\CRM.Model.csproj", "{CE0145C0-0E10-48C0-BA41-217032015C1C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CRM.Services", "CRM.Services\CRM.Services.csproj", "{C4F00CA2-D257-4699-97C6-DB848C72BF12}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CRM.Calendar", "CRM.Calendar\CRM.Calendar.csproj", "{DDE818CF-6F28-4D4C-A779-C1469FC41BE9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CE0145C0-0E10-48C0-BA41-217032015C1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE0145C0-0E10-48C0-BA41-217032015C1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE0145C0-0E10-48C0-BA41-217032015C1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE0145C0-0E10-48C0-BA41-217032015C1C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C4F00CA2-D257-4699-97C6-DB848C72BF12}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C4F00CA2-D257-4699-97C6-DB848C72BF12}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C4F00CA2-D257-4699-97C6-DB848C72BF12}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C4F00CA2-D257-4699-97C6-DB848C72BF12}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DDE818CF-6F28-4D4C-A779-C1469FC41BE9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DDE818CF-6F28-4D4C-A779-C1469FC41BE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DDE818CF-6F28-4D4C-A779-C1469FC41BE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DDE818CF-6F28-4D4C-A779-C1469FC41BE9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {694ADF10-6E11-499E-A369-447A72A6A41B}
+	EndGlobalSection
+EndGlobal
