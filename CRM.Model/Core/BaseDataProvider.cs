@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
@@ -307,8 +308,12 @@ namespace CRM.Model
         /// Database connection string
         /// </summary>
         //protected string CurrentConnectionString => DataSettingsManager.LoadSettings().ConnectionString;
-        protected string CurrentConnectionString => "Data Source=.;Initial Catalog=FAAD2;Integrated Security=True";
+      //  protected string CurrentConnectionString => "Data Source=.;Initial Catalog=FAAD2;Integrated Security=True";
 
+        protected string CurrentConnectionString()
+        {
+            return ConfigurationManager.AppSettings["ConnectionString"];
+        }
         /// <summary>
         /// Name of database provider
         /// </summary>

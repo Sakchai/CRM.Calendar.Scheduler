@@ -54,7 +54,7 @@ namespace FAAD.Calendar
             UserCredential credential;
 
             using (var stream =
-                new FileStream(@"credentials\credentials.json", FileMode.Open, FileAccess.Read))
+                new FileStream(@"credentials.json", FileMode.Open, FileAccess.Read))
             {
                 // The file token.json stores the user's access and refresh tokens, and is created
                 // automatically when the authorization flow completes for the first time.
@@ -75,37 +75,6 @@ namespace FAAD.Calendar
                 ApplicationName = ApplicationName,
             });
 
-            // Define parameters of request.
-            EventsResource.ListRequest request = service.Events.List("primary");
-            request.TimeMin = DateTime.Now;
-            request.ShowDeleted = false;
-            request.SingleEvents = true;
-            request.MaxResults = 10;
-            request.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
-
-
-            // List events.
-            Events events = request.Execute();
-            Console.WriteLine("Upcoming events:");
-            if (events.Items != null && events.Items.Count > 0)
-            {
-                foreach (var eventItem in events.Items)
-                {
-                    string when = eventItem.Start.DateTime.ToString();
-                    if (string.IsNullOrEmpty(when))
-                    {
-                        when = eventItem.Start.Date;
-                    }
-                    Console.WriteLine("{0} ({1})", eventItem.Summary, when);
-                }
-            }
-            else
-            {
-                Console.WriteLine("No upcoming events found.");
-            }
-
-            
-
 
             using (var container = builder.Build())
             {
@@ -114,27 +83,50 @@ namespace FAAD.Calendar
                 var employees = employeeService.GetEmployeesList();
                 foreach (var item in employees)
                 {
-                    var activities = activityService.GetActivityByOwner(item.EmpId);
-                    if (IsFacebookCalendarType()) {
-                        foreach (var act in activities)
-                        {
-                            var emails = activityService.GetEmailsFollowID(act.ActivityId);
-                            CreateNewEvent(service, item.Facebook, act, emails);
-                        }
-                    }
-                    else
+                    var activities = activityService.GetActivityByOwner(item.EmpId, GetBeforeMinuitesModifiedDate());
+
+                    foreach (var act in activities)
                     {
-                        foreach (var act in activities)
-                        {
-                            var emails = activityService.GetEmailsFollowID(act.ActivityId);
-                            CreateNewEvent(service, item.Email, act, emails);
-                        }
+                        string calendarId = string.Empty;
+                        if (IsFacebookCalendarType())
+                            calendarId = item.Facebook;
+                        else
+                            calendarId = item.Email;
+
+                        var emails = activityService.GetEmailsFollowID(act.ActivityId);
+                        if (FindEvent(service, calendarId, act.ActivityId))
+                            UpdateNewEvent(service, calendarId, act, emails, act.ActivityId);
+                        else
+                            CreateNewEvent(service, calendarId, act, emails);
                     }
+
                 }
             }
 
             Console.Read();
 
+        }
+
+
+        private static bool FindEvent(CalendarService service, string calendarId, string eventId)
+        {
+            EventsResource.ListRequest request = service.Events.List(calendarId);
+            request.TimeMin = DateTime.Now;
+            request.ShowDeleted = false;
+            request.SingleEvents = true;
+            request.ICalUID = eventId;
+            request.MaxResults = 10;
+            request.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
+
+            // List events.
+            Events events = request.Execute();
+            return events.Items.Count > 0;
+
+        }
+
+        private static int GetBeforeMinuitesModifiedDate()
+        {
+            return Int32.Parse(ConfigurationManager.AppSettings["BeforeMinuitesModifiedDate"]);
         }
         private static string GetTimeZone()
         {
@@ -164,16 +156,30 @@ namespace FAAD.Calendar
             return Int32.Parse(ConfigurationManager.AppSettings["EventReminderSMSMinutes"]);
         }
 
-        private static void CreateNewEvent(CalendarService service,string calendarId, CrmActivity activity, List<EventAttendee> eventAttendees )
+        private static string GetPriorityColor(string priority)
         {
-            //new EventAttendee[] {
-            //        new EventAttendee() { Email = "lpage@example.com" },
-            //        new EventAttendee() { Email = "sbrin@example.com" },
-            //    }
-            //new EventReminder[] {
-            //            new EventReminder() { Method = "email", Minutes = 24 * 60 },
-            //            new EventReminder() { Method = "sms", Minutes = 10 },
-            //        }
+            if (priority.Equals("ต่ำ"))
+                return "green";
+            else if (priority.Equals("ปานกลาง"))
+                return "yellow";
+            else
+                return "red";
+
+        }
+        private static string GetStatus(string status)
+        {
+            if (status.Equals("กำลังดำเนินการ") || status.Equals("ยังไม่ได้เริ่ม"))
+                return "tentative";
+            else if (status.Equals("เสร็จสิ้น"))
+                return "confirmed";
+            else
+                return "cancelled";
+
+        }
+
+        private static void CreateNewEvent(CalendarService service, string calendarId, CrmActivity activity, List<EventAttendee> eventAttendees)
+        {
+
 
             var overrides = new List<EventReminder>();
             if (GetEventReminderEmail())
@@ -184,20 +190,24 @@ namespace FAAD.Calendar
             {
                 overrides.Add(new EventReminder { Method = "sms", Minutes = GetEventReminderSMSMinutes() });
             }
-            string summary = $" {activity.Topic} [ความสำคัญ:{activity.PriorityEnumName}][สถานะ:{activity.StatusEnumName}] ";
+            string summary = $"{activity.Topic} [ความสำคัญ:{activity.PriorityEnumName}][สถานะ:{activity.StatusEnumName}] ";
             Event newEvent = new Event()
             {
+                ICalUID = activity.ActivityId,
                 Summary = summary,
                 Location = activity.RelateActName,
                 Description = activity.Detail,
+                Created = activity.ModifiedDate,
+                ColorId = GetPriorityColor(activity.PriorityEnumName),
+                Status = GetStatus(activity.StatusEnumName),
                 Start = new EventDateTime()
                 {
-                    DateTime = DateTime.Now.AddSeconds(-60),
+                    DateTime = activity.StartDateTime,
                     TimeZone = GetTimeZone(),
                 },
                 End = new EventDateTime()
                 {
-                    DateTime = DateTime.Now,
+                    DateTime = activity.EndDateTime,
                     TimeZone = GetTimeZone(),
                 },
                 Attendees = eventAttendees,
@@ -208,11 +218,56 @@ namespace FAAD.Calendar
                 }
             };
 
-            //String calendarId = "primary";
+
             EventsResource.InsertRequest insertRequest = service.Events.Insert(newEvent, calendarId);
             Event createdEvent = insertRequest.Execute();
-            Console.WriteLine("Event created: {0}", createdEvent.HtmlLink);
+
+        }
+
+        private static void UpdateNewEvent(CalendarService service, string calendarId, CrmActivity activity, List<EventAttendee> eventAttendees, string eventId)
+        {
+            var overrides = new List<EventReminder>();
+            if (GetEventReminderEmail())
+            {
+                overrides.Add(new EventReminder { Method = "email", Minutes = GetEventReminderEmailMinutes() });
+            }
+            if (GetEventReminderSMS())
+            {
+                overrides.Add(new EventReminder { Method = "sms", Minutes = GetEventReminderSMSMinutes() });
+            }
+            string summary = $"{activity.Topic} [ความสำคัญ:{activity.PriorityEnumName}][สถานะ:{activity.StatusEnumName}] ";
+            Event newEvent = new Event()
+            {
+                ICalUID = activity.ActivityId,
+                Summary = summary,
+                Location = activity.RelateActName,
+                Description = activity.Detail,
+                Created = activity.ModifiedDate,
+                ColorId = GetPriorityColor(activity.PriorityEnumName),
+                Status = GetStatus(activity.StatusEnumName),
+                Start = new EventDateTime()
+                {
+                    DateTime = activity.StartDateTime,
+                    TimeZone = GetTimeZone(),
+                },
+                End = new EventDateTime()
+                {
+                    DateTime = activity.EndDateTime,
+                    TimeZone = GetTimeZone(),
+                },
+                Attendees = eventAttendees,
+                Reminders = new Event.RemindersData()
+                {
+                    UseDefault = false,
+                    Overrides = overrides
+                }
+            };
+
+            EventsResource.UpdateRequest updateRequest = service.Events.Update(newEvent, calendarId, eventId);
+            Event updatedEvent = updateRequest.Execute();
         }
     }
 }
-// [END calendar_quickstart]
+
+
+
