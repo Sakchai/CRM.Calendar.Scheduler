@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using AutoMapper;
 using CRM.Dto;
 using CRM.Model;
 using Google.Apis.Calendar.v3.Data;
@@ -17,7 +18,7 @@ namespace CRM.Services
         private readonly IEmployeeService _employeeService;
         private readonly IRepository<CrmActivity> _activityRepository;
         private readonly IRepository<SmEnum> _enumRepository;
-
+        private readonly IMapper _mapper;
         #endregion
 
         #region Ctor
@@ -25,13 +26,15 @@ namespace CRM.Services
         public ActivityService(IRepository<CrmActivity> activityRepository,
             IRepository<CrmActivityFollower> activityFollowerRepository,
             IEmployeeService employeeService,
-            IRepository<SmEnum> enumRepository
+            IRepository<SmEnum> enumRepository,
+            IMapper mapper
             )
         {
             _activityRepository = activityRepository;
             _activityFollowerRepository = activityFollowerRepository;
             _employeeService = employeeService;
             _enumRepository = enumRepository;
+            _mapper = mapper;
         }
 
         #endregion
@@ -43,7 +46,7 @@ namespace CRM.Services
         /// </summary>
         /// <param name="activityId">Activity identifier</param>
         /// <returns>Activity</returns>
-        public virtual IList<CrmActivity> GetActivityByOwner(string ownerId, int BeforeMinuitesModifiedDate)
+        public virtual IList<CrmActivityDto> GetActivityByOwner(string ownerId, int BeforeMinuitesModifiedDate)
         {
             if (string.IsNullOrWhiteSpace(ownerId))
                 return null;
@@ -51,12 +54,14 @@ namespace CRM.Services
             var query = _activityRepository.Table;
             var activitys = query.Where(x => x.OwnerId == ownerId 
                                         && x.ModifiedDate >= DateTime.Now.AddMinutes(-BeforeMinuitesModifiedDate) ).ToList();
-            var activitysByOwner = new List<CrmActivity>();
+            var activitysByOwner = new List<CrmActivityDto>();
             foreach (var item in activitys)
             {
-                item.PriorityEnumName = GetStatusOrPriorityName(item.PriorityEnumId);
-                item.StatusEnumName = GetStatusOrPriorityName(item.StatusEnumId);
-                activitysByOwner.Add(item);
+                var activity = _mapper.Map<CrmActivity, CrmActivityDto>(item);
+                activity.PriorityEnumName = GetStatusOrPriorityName(item.PriorityEnumId);
+                activity.StatusEnumName = GetStatusOrPriorityName(item.StatusEnumId);
+
+                activitysByOwner.Add(activity);
             }
 
             return activitysByOwner;

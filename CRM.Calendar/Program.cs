@@ -26,6 +26,9 @@ using System.IO;
 using System.Threading;
 using System.Configuration;
 using System.Collections.Generic;
+using AutoMapper;
+using CRM.Calendar;
+using CRM.Dto;
 
 namespace FAAD.Calendar
 {
@@ -50,6 +53,25 @@ namespace FAAD.Calendar
 
             builder.RegisterType<EmployeeService>().As<IEmployeeService>().InstancePerLifetimeScope();
             builder.RegisterType<ActivityService>().As<IActivityService>().InstancePerLifetimeScope();
+
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            builder.RegisterAssemblyTypes(assemblies)
+                .Where(t => typeof(Profile).IsAssignableFrom(t) && !t.IsAbstract && t.IsPublic)
+                .As<Profile>();
+
+            var mappingConfig = new MapperConfiguration(mc =>
+            {
+                mc.AddProfile(new AutoMapping());
+            });
+
+            builder.Register(c => new MapperConfiguration(cfg => {
+                foreach (var profile in c.Resolve<IEnumerable<Profile>>())
+                {
+                    cfg.AddProfile(profile);
+                }
+            })).AsSelf().SingleInstance();
+
+            builder.Register(ctx => ctx.Resolve<MapperConfiguration>().CreateMapper()).As<IMapper>().InstancePerLifetimeScope();
 
             UserCredential credential;
 
@@ -92,7 +114,7 @@ namespace FAAD.Calendar
                             calendarId = item.Facebook;
                         else
                             calendarId = item.Email;
-
+                        calendarId = "primary";
                         var emails = activityService.GetEmailsFollowID(act.ActivityId);
                         if (FindEvent(service, calendarId, act.ActivityId))
                             UpdateNewEvent(service, calendarId, act, emails, act.ActivityId);
@@ -177,7 +199,7 @@ namespace FAAD.Calendar
 
         }
 
-        private static void CreateNewEvent(CalendarService service, string calendarId, CrmActivity activity, List<EventAttendee> eventAttendees)
+        private static void CreateNewEvent(CalendarService service, string calendarId, CrmActivityDto activity, List<EventAttendee> eventAttendees)
         {
 
 
@@ -224,7 +246,7 @@ namespace FAAD.Calendar
 
         }
 
-        private static void UpdateNewEvent(CalendarService service, string calendarId, CrmActivity activity, List<EventAttendee> eventAttendees, string eventId)
+        private static void UpdateNewEvent(CalendarService service, string calendarId, CrmActivityDto activity, List<EventAttendee> eventAttendees, string eventId)
         {
             var overrides = new List<EventReminder>();
             if (GetEventReminderEmail())

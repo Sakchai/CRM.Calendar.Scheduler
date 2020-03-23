@@ -16,7 +16,7 @@ namespace CRM.Services
         /// </summary>
         /// <param name="email">Activity identifier</param>
         /// <returns>Activity</returns>
-        IList<CrmActivity> GetActivityByOwner(string ownerId, int BeforeMinuitesModifiedDate);
+        IList<CrmActivityDto> GetActivityByOwner(string ownerId, int BeforeMinuitesModifiedDate);
 
         //IList<EmployeeFollowerDto> GetEmailsFollowID(string activityId);
         List<EventAttendee> GetEmailsFollowID(string activityId);

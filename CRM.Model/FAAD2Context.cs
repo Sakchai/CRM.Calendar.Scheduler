@@ -126,10 +126,7 @@ namespace CRM.Model
                     .HasMaxLength(50);
 
                 entity.Property(e => e.Topic).HasMaxLength(255);
-                entity.Ignore(e => e.PriorityEnumName);
-                entity.Ignore(e => e.StatusEnumName);
-                entity.Ignore(e => e.StartDateTime);
-                entity.Ignore(e => e.EndDateTime);
+
 
             });
 
