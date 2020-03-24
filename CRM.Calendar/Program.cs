@@ -67,7 +67,8 @@ namespace FAAD.Calendar
                 mc.AddProfile(new AutoMapping());
             });
 
-            builder.Register(c => new MapperConfiguration(cfg => {
+            builder.Register(c => new MapperConfiguration(cfg =>
+            {
                 foreach (var profile in c.Resolve<IEnumerable<Profile>>())
                 {
                     cfg.AddProfile(profile);
@@ -117,10 +118,8 @@ namespace FAAD.Calendar
                             calendarId = item.Facebook;
                         else
                             calendarId = item.Email;
-                        calendarId = "primary";
+                        //calendarId = "primary";
                         var followers = activityService.GetEmailsFollowID(activity.ActivityId);
-                        //string iCalUID = activity.ActivityId;
-                        //activity.ActivityId = iCalUID;
                         string eventId = FindEventId(service, calendarId, activity.ActivityId);
                         if (!string.IsNullOrEmpty(eventId))
                             UpdateNewEvent(service, calendarId, activity, followers, eventId, logger);
@@ -149,7 +148,7 @@ namespace FAAD.Calendar
             string eventId = string.Empty;
             foreach (var item in events.Items)
             {
-                eventId =  item.Id;
+                eventId = item.Id;
                 break;
             }
             return eventId;
@@ -257,7 +256,8 @@ namespace FAAD.Calendar
             {
                 Event createdEvent = insertRequest.Execute();
                 logger.Info($"Activity Id:{createdEvent.Id}");
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 logger.Error($"Insert Activity:{newEvent.ICalUID} CalendarId:{calendarId}  Error:{e.Message}{e.StackTrace}");
             }
@@ -307,7 +307,7 @@ namespace FAAD.Calendar
                 }
             };
 
-            EventsResource.UpdateRequest updateRequest = service.Events.Update(newEvent, calendarId,eventId);
+            EventsResource.UpdateRequest updateRequest = service.Events.Update(newEvent, calendarId, eventId);
             try
             {
                 Event updatedEvent = updateRequest.Execute();

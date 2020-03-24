@@ -105,8 +105,8 @@ namespace CRM.Services
         public IList<SmEmployee> GetEmployeesList()
         {
             var query = _employeeRepository.Table;
-            return query.Where(x => !x.IsDelete.Value 
-            && x.Email == "th.sakchai@gmail.com").ToList();
+            return query.Where(x => !x.IsDelete.Value).ToList();
+           // && x.Email == "th.sakchai@gmail.com").ToList();
         }
 
 
