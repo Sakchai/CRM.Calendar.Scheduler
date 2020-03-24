@@ -29,6 +29,8 @@ using System.Collections.Generic;
 using AutoMapper;
 using CRM.Calendar;
 using CRM.Dto;
+using log4net;
+using System.Reflection;
 
 namespace FAAD.Calendar
 {
@@ -42,6 +44,7 @@ namespace FAAD.Calendar
 
         static void Main(string[] args)
         {
+            ILog logger = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
             var builder = new ContainerBuilder();
             //data layer
@@ -107,7 +110,7 @@ namespace FAAD.Calendar
                 {
                     var activities = activityService.GetActivityByOwner(item.EmpId, GetBeforeMinuitesModifiedDate());
 
-                    foreach (var act in activities)
+                    foreach (var activity in activities)
                     {
                         string calendarId = string.Empty;
                         if (IsFacebookCalendarType())
@@ -115,34 +118,41 @@ namespace FAAD.Calendar
                         else
                             calendarId = item.Email;
                         calendarId = "primary";
-                        var emails = activityService.GetEmailsFollowID(act.ActivityId);
-                        if (FindEvent(service, calendarId, act.ActivityId))
-                            UpdateNewEvent(service, calendarId, act, emails, act.ActivityId);
+                        var followers = activityService.GetEmailsFollowID(activity.ActivityId);
+                        //string iCalUID = activity.ActivityId;
+                        //activity.ActivityId = iCalUID;
+                        string eventId = FindEventId(service, calendarId, activity.ActivityId);
+                        if (!string.IsNullOrEmpty(eventId))
+                            UpdateNewEvent(service, calendarId, activity, followers, eventId, logger);
                         else
-                            CreateNewEvent(service, calendarId, act, emails);
+                            CreateNewEvent(service, calendarId, activity, followers, logger);
                     }
 
                 }
             }
 
-            Console.Read();
-
         }
 
 
-        private static bool FindEvent(CalendarService service, string calendarId, string eventId)
+        private static string FindEventId(CalendarService service, string calendarId, string iCalUID)
         {
             EventsResource.ListRequest request = service.Events.List(calendarId);
             request.TimeMin = DateTime.Now;
             request.ShowDeleted = false;
             request.SingleEvents = true;
-            request.ICalUID = eventId;
+            request.ICalUID = iCalUID;
             request.MaxResults = 10;
             request.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
 
             // List events.
             Events events = request.Execute();
-            return events.Items.Count > 0;
+            string eventId = string.Empty;
+            foreach (var item in events.Items)
+            {
+                eventId =  item.Id;
+                break;
+            }
+            return eventId;
 
         }
 
@@ -181,11 +191,11 @@ namespace FAAD.Calendar
         private static string GetPriorityColor(string priority)
         {
             if (priority.Equals("ต่ำ"))
-                return "green";
+                return "8"; // "black";
             else if (priority.Equals("ปานกลาง"))
-                return "yellow";
+                return "7"; //"blue";
             else
-                return "red";
+                return "6"; // "red";
 
         }
         private static string GetStatus(string status)
@@ -199,7 +209,7 @@ namespace FAAD.Calendar
 
         }
 
-        private static void CreateNewEvent(CalendarService service, string calendarId, CrmActivityDto activity, List<EventAttendee> eventAttendees)
+        private static void CreateNewEvent(CalendarService service, string calendarId, CrmActivityDto activity, List<EventAttendee> eventAttendees, ILog logger)
         {
 
 
@@ -212,7 +222,9 @@ namespace FAAD.Calendar
             {
                 overrides.Add(new EventReminder { Method = "sms", Minutes = GetEventReminderSMSMinutes() });
             }
-            string summary = $"{activity.Topic} [ความสำคัญ:{activity.PriorityEnumName}][สถานะ:{activity.StatusEnumName}] ";
+
+
+            string summary = $"{activity.Topic} [ความสำคัญ:{activity.PriorityEnumName}][สถานะ:{activity.StatusEnumName}] ".Replace(System.Environment.NewLine, string.Empty);
             Event newEvent = new Event()
             {
                 ICalUID = activity.ActivityId,
@@ -240,14 +252,22 @@ namespace FAAD.Calendar
                 }
             };
 
-
             EventsResource.InsertRequest insertRequest = service.Events.Insert(newEvent, calendarId);
-            Event createdEvent = insertRequest.Execute();
+            try
+            {
+                Event createdEvent = insertRequest.Execute();
+                logger.Info($"Activity Id:{createdEvent.Id}");
+            } catch (Exception e)
+            {
+                logger.Error($"Insert Activity:{newEvent.ICalUID} CalendarId:{calendarId}  Error:{e.Message}{e.StackTrace}");
+            }
 
         }
 
-        private static void UpdateNewEvent(CalendarService service, string calendarId, CrmActivityDto activity, List<EventAttendee> eventAttendees, string eventId)
+        private static void UpdateNewEvent(CalendarService service, string calendarId, CrmActivityDto activity, List<EventAttendee> eventAttendees, string eventId, ILog logger)
         {
+
+
             var overrides = new List<EventReminder>();
             if (GetEventReminderEmail())
             {
@@ -257,7 +277,9 @@ namespace FAAD.Calendar
             {
                 overrides.Add(new EventReminder { Method = "sms", Minutes = GetEventReminderSMSMinutes() });
             }
-            string summary = $"{activity.Topic} [ความสำคัญ:{activity.PriorityEnumName}][สถานะ:{activity.StatusEnumName}] ";
+
+
+            string summary = $"{activity.Topic} [ความสำคัญ:{activity.PriorityEnumName}][สถานะ:{activity.StatusEnumName}] ".Replace(System.Environment.NewLine, string.Empty);
             Event newEvent = new Event()
             {
                 ICalUID = activity.ActivityId,
@@ -285,8 +307,31 @@ namespace FAAD.Calendar
                 }
             };
 
-            EventsResource.UpdateRequest updateRequest = service.Events.Update(newEvent, calendarId, eventId);
-            Event updatedEvent = updateRequest.Execute();
+            EventsResource.UpdateRequest updateRequest = service.Events.Update(newEvent, calendarId,eventId);
+            try
+            {
+                Event updatedEvent = updateRequest.Execute();
+                logger.Info($"Activity Id:{updatedEvent.Id}");
+            }
+            catch (Exception e)
+            {
+                logger.Error($"Insert Activity:{newEvent.ICalUID} CalendarId:{calendarId}  Error:{e.Message}{e.StackTrace}");
+            }
+
+        }
+
+
+        private static void DeleteNewEvent(CalendarService service, string calendarId, CrmActivityDto activity, string eventId, ILog logger)
+        {
+            EventsResource.DeleteRequest deleteRequest = service.Events.Delete(calendarId, eventId);
+            try
+            {
+                deleteRequest.Execute();
+            }
+            catch (Exception e)
+            {
+                logger.Error($"Delete Activity Id:{activity.ActivityId} CalendarId:{calendarId}  Error:{e.Message}{e.StackTrace}");
+            }
         }
     }
 }
