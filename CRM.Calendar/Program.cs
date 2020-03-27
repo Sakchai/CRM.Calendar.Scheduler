@@ -109,29 +109,129 @@ namespace FAAD.Calendar
                 var employees = employeeService.GetEmployeesList();
                 foreach (var item in employees)
                 {
-                    var activities = activityService.GetActivityByOwner(item.EmpId, GetBeforeMinuitesModifiedDate());
-
-                    foreach (var activity in activities)
-                    {
-                        string calendarId = string.Empty;
-                        if (IsFacebookCalendarType())
-                            calendarId = item.Facebook;
-                        else
-                            calendarId = item.Email;
-                        //calendarId = "primary";
-                        var followers = activityService.GetEmailsFollowID(activity.ActivityId);
-                        string eventId = FindEventId(service, calendarId, activity.ActivityId);
-                        if (!string.IsNullOrEmpty(eventId))
-                            UpdateNewEvent(service, calendarId, activity, followers, eventId, logger);
-                        else
-                            CreateNewEvent(service, calendarId, activity, followers, logger);
-                    }
-
+                    string calendarId = string.Empty;
+                    if (IsFacebookCalendarType())
+                        calendarId = item.Facebook;
+                    else
+                        calendarId = item.Email;
+                    CreateOrUpdateEventsToGoogleCalendar(logger, service, activityService, item, calendarId);
+                    UpdateActivitiesFromGoogleCalendar(logger, service, calendarId, activityService);
                 }
             }
 
         }
 
+        private static void CreateOrUpdateEventsToGoogleCalendar(ILog logger, CalendarService service, IActivityService activityService, SmEmployee item, string calendarId)
+        {
+            var activities = activityService.GetActivityByOwner(item.EmpId, GetBeforeMinuitesModifiedDate());
+            foreach (var activity in activities)
+            {
+                var followers = activityService.GetEmailsFollowID(activity.ActivityId);
+                string eventId = FindEventId(service, calendarId, activity.ActivityId);
+                if (!string.IsNullOrEmpty(eventId))
+                    UpdateNewEvent(service, calendarId, activity, followers, eventId, logger);
+                else
+                    CreateNewEvent(service, calendarId, activity, followers, logger);
+            }
+        }
+
+        private static void UpdateActivitiesFromGoogleCalendar(ILog logger, CalendarService service, string calendarId, IActivityService activityService)
+        {
+            EventsResource.ListRequest request = service.Events.List(calendarId);
+            request.TimeMin = DateTime.Now;
+            // request.TimeMax = DateTime.Now.AddMinutes(-GetBeforeMinuitesModifiedDate());
+            request.ShowDeleted = false;
+            request.SingleEvents = true;
+            request.MaxResults = 100;
+            request.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
+
+            // List events.
+            Events events = request.Execute();
+            if (events != null)
+            {
+                foreach (var item in events.Items)
+                {
+                    var activity = new CrmActivity();
+                    try
+                    {
+                        bool updated = false;
+
+                        activity = activityService.GetActivityById(item.ICalUID);
+                        //activity = activityService.GetActivityById("23e8f5c6-283c-4826-9e80-e5dce15fdefc");
+                        if (activity != null)
+                        {
+                            var startDateTime = activity.StartDate + activity.StartTime;
+                            var endDateTime = activity.EndDate + activity.EndTime;
+                            if (startDateTime != item.Start.DateTime.Value)
+                            {
+                                updated = true;
+                                activity.StartDate = item.Start.DateTime.Value.Date;
+                                activity.StartTime = item.Start.DateTime.Value.TimeOfDay;
+                            }
+                            if (endDateTime != item.End.DateTime.Value)
+                            {
+                                updated = true;
+                                activity.StartDate = item.Start.DateTime.Value.Date;
+                                activity.StartTime = item.Start.DateTime.Value.TimeOfDay;
+                            }
+                            if (!item.Summary.Contains(activity.Topic))
+                            {
+                                updated = true;
+                                activity.Topic = item.Summary;
+                            }
+                            if (!item.Description.Contains(activity.Detail))
+                            {
+                                updated = true;
+                                activity.Detail = item.Description;
+                            }
+                        }
+
+                        if (updated) activityService.UpdateActivity(activity);
+
+                    }
+                    catch (Exception e)
+                    {
+                        logger.Error($"Update Activity Id:{activity.ActivityId} CalendarId:{calendarId}  Error:{e.Message}{e.StackTrace}");
+                    }
+                }
+            }
+        }
+
+        private static bool GetActivity(IActivityService activityService, Event item, out CrmActivity activity)
+        {
+            bool updated = false;
+            
+            //activity = activityService.GetActivityById(item.ICalUID);
+            activity = activityService.GetActivityById("23e8f5c6-283c-4826-9e80-e5dce15fdefc");
+            if (activity != null)
+            {
+                var startDateTime = activity.StartDate + activity.StartTime;
+                var endDateTime = activity.EndDate + activity.EndTime;
+                if (startDateTime != item.Start.DateTime.Value)
+                {
+                    updated = true;
+                    activity.StartDate = item.Start.DateTime.Value.Date;
+                    activity.StartTime = item.Start.DateTime.Value.TimeOfDay;
+                }
+                if (endDateTime != item.End.DateTime.Value)
+                {
+                    updated = true;
+                    activity.StartDate = item.Start.DateTime.Value.Date;
+                    activity.StartTime = item.Start.DateTime.Value.TimeOfDay;
+                }
+                if (!item.Summary.Contains(activity.Topic))
+                {
+                    updated = true;
+                    activity.Topic = item.Summary;
+                }
+                if (!item.Description.Contains(activity.Detail))
+                {
+                    updated = true;
+                    activity.Detail = item.Description;
+                }
+            }
+            return updated;
+        }
 
         private static string FindEventId(CalendarService service, string calendarId, string iCalUID)
         {
@@ -255,11 +355,11 @@ namespace FAAD.Calendar
             try
             {
                 Event createdEvent = insertRequest.Execute();
-                logger.Info($"Activity Id:{createdEvent.Id}");
+                logger.Info($"Event Id:{createdEvent.Id}");
             }
             catch (Exception e)
             {
-                logger.Error($"Insert Activity:{newEvent.ICalUID} CalendarId:{calendarId}  Error:{e.Message}{e.StackTrace}");
+                logger.Error($"Insert Event Id:{newEvent.ICalUID} CalendarId:{calendarId}  Error:{e.Message}{e.StackTrace}");
             }
 
         }
@@ -311,11 +411,11 @@ namespace FAAD.Calendar
             try
             {
                 Event updatedEvent = updateRequest.Execute();
-                logger.Info($"Activity Id:{updatedEvent.Id}");
+                logger.Info($"Event Id:{updatedEvent.Id}");
             }
             catch (Exception e)
             {
-                logger.Error($"Insert Activity:{newEvent.ICalUID} CalendarId:{calendarId}  Error:{e.Message}{e.StackTrace}");
+                logger.Error($"Update Event Id:{newEvent.ICalUID} CalendarId:{calendarId}  Error:{e.Message}{e.StackTrace}");
             }
 
         }
@@ -330,7 +430,7 @@ namespace FAAD.Calendar
             }
             catch (Exception e)
             {
-                logger.Error($"Delete Activity Id:{activity.ActivityId} CalendarId:{calendarId}  Error:{e.Message}{e.StackTrace}");
+                logger.Error($"Delete Event Id:{activity.ActivityId} CalendarId:{calendarId}  Error:{e.Message}{e.StackTrace}");
             }
         }
     }

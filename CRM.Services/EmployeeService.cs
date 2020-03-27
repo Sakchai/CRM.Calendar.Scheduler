@@ -106,7 +106,7 @@ namespace CRM.Services
         {
             var query = _employeeRepository.Table;
             return query.Where(x => !x.IsDelete.Value).ToList();
-           // && x.Email == "th.sakchai@gmail.com").ToList();
+            //&& x.Email == "th.sakchai@gmail.com").ToList();
         }
 
 

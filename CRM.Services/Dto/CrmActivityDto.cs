@@ -55,7 +55,7 @@ namespace CRM.Dto
         public string RefDocNo { get; set; }
         public  string PriorityEnumName { get; set; }
         public  string StatusEnumName { get; set; }
-        public virtual DateTime? StartDateTime { get { return StartDate + StartTime; } }
+        public virtual DateTime? StartDateTime { get { return StartDate + StartTime; }}
 
         public virtual DateTime? EndDateTime { get { return EndDate + EndTime;  } }
     }

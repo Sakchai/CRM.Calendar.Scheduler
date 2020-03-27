@@ -135,6 +135,15 @@ namespace CRM.Services
             return employeeFollowers;
         }
 
+        public CrmActivity GetActivityById(string activityId)
+        {
+            if (string.IsNullOrWhiteSpace(activityId))
+                return null;
+
+            var query = _activityRepository.Table;
+            return query.Where(x => x.ActivityId == activityId).FirstOrDefault();
+        }
+
 
 
 

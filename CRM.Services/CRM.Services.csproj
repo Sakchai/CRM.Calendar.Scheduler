@@ -67,7 +67,6 @@
   <ItemGroup>
     <Compile Include="ActivityService.cs" />
     <Compile Include="Dto\CrmActivityDto.cs" />
-    <Compile Include="Dto\EmployeeFollowerDto.cs" />
     <Compile Include="EmployeeService.cs" />
     <Compile Include="IActivityService.cs" />
     <Compile Include="IEmployeeService.cs" />
