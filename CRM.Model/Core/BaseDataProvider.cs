@@ -308,8 +308,8 @@ namespace CRM.Model
         /// Database connection string
         /// </summary>
         //protected string CurrentConnectionString => DataSettingsManager.LoadSettings().ConnectionString;
-        protected string CurrentConnectionString => "Data Source=.;Initial Catalog=FAAD2;Integrated Security=True";
-
+       // protected string CurrentConnectionString => "Data Source=.;Initial Catalog=FAAD2;Integrated Security=True";
+        protected string CurrentConnectionString => ConfigurationManager.AppSettings["ConnectionString"];
         //protected string CurrentConnectionString()
         //{
         //    return ConfigurationManager.AppSettings["ConnectionString"];

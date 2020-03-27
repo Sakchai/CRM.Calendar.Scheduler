@@ -197,42 +197,6 @@ namespace FAAD.Calendar
             }
         }
 
-        private static bool GetActivity(IActivityService activityService, Event item, out CrmActivity activity)
-        {
-            bool updated = false;
-            
-            //activity = activityService.GetActivityById(item.ICalUID);
-            activity = activityService.GetActivityById("23e8f5c6-283c-4826-9e80-e5dce15fdefc");
-            if (activity != null)
-            {
-                var startDateTime = activity.StartDate + activity.StartTime;
-                var endDateTime = activity.EndDate + activity.EndTime;
-                if (startDateTime != item.Start.DateTime.Value)
-                {
-                    updated = true;
-                    activity.StartDate = item.Start.DateTime.Value.Date;
-                    activity.StartTime = item.Start.DateTime.Value.TimeOfDay;
-                }
-                if (endDateTime != item.End.DateTime.Value)
-                {
-                    updated = true;
-                    activity.StartDate = item.Start.DateTime.Value.Date;
-                    activity.StartTime = item.Start.DateTime.Value.TimeOfDay;
-                }
-                if (!item.Summary.Contains(activity.Topic))
-                {
-                    updated = true;
-                    activity.Topic = item.Summary;
-                }
-                if (!item.Description.Contains(activity.Detail))
-                {
-                    updated = true;
-                    activity.Detail = item.Description;
-                }
-            }
-            return updated;
-        }
-
         private static string FindEventId(CalendarService service, string calendarId, string iCalUID)
         {
             EventsResource.ListRequest request = service.Events.List(calendarId);
