@@ -52,7 +52,7 @@ namespace CRM.Services
                 return null;
 
             var query = _activityRepository.Table;
-            var activitys = query.Where(x => x.OwnerId == ownerId 
+            var activitys = query.Where(x => x.OwnerId == ownerId //).ToList();
                                         && x.ModifiedDate >= DateTime.Now.AddMinutes(-BeforeMinuitesModifiedDate) ).ToList();
             var activitysByOwner = new List<CrmActivityDto>();
             foreach (var item in activitys)

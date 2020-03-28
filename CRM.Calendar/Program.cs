@@ -31,6 +31,7 @@ using CRM.Calendar;
 using CRM.Dto;
 using log4net;
 using System.Reflection;
+using System.Globalization;
 
 namespace FAAD.Calendar
 {
@@ -114,39 +115,39 @@ namespace FAAD.Calendar
                         calendarId = item.Facebook;
                     else
                         calendarId = item.Email;
-                    CreateOrUpdateEventsToGoogleCalendar(logger, service, activityService, item, calendarId);
-                    UpdateActivitiesFromGoogleCalendar(logger, service, calendarId, activityService);
+                    bool foundGoogleCalendar = (GetCalendar(logger, service, calendarId) != null);
+                    if (UsedDefaultCalendarId())  {
+                        if (!foundGoogleCalendar) calendarId = GetDefaultCalendarId();
+                        else CreateNewCalendar(logger, service, item);
+                        foundGoogleCalendar = true;
+                    }
+                    if (foundGoogleCalendar)
+                    {
+                        CreateOrUpdateEventsToGoogleCalendar(logger, service, item, activityService, calendarId);
+                        UpdateActivitiesFromGoogleCalendar(logger, service, activityService, calendarId);
+                    }
                 }
             }
 
         }
 
-        private static void CreateOrUpdateEventsToGoogleCalendar(ILog logger, CalendarService service, IActivityService activityService, SmEmployee item, string calendarId)
+        private static void CreateOrUpdateEventsToGoogleCalendar(ILog logger, CalendarService service, SmEmployee item, IActivityService activityService, string calendarId)
         {
             var activities = activityService.GetActivityByOwner(item.EmpId, GetBeforeMinuitesModifiedDate());
             foreach (var activity in activities)
             {
                 var followers = activityService.GetEmailsFollowID(activity.ActivityId);
-                string eventId = FindEventId(service, calendarId, activity.ActivityId);
+                string eventId = FindEventId(logger, service, calendarId, activity.ActivityId);
                 if (!string.IsNullOrEmpty(eventId))
-                    UpdateNewEvent(service, calendarId, activity, followers, eventId, logger);
+                    UpdateNewEvent(service, calendarId, item, activity, followers, eventId, logger);
                 else
-                    CreateNewEvent(service, calendarId, activity, followers, logger);
+                    CreateNewEvent(service, calendarId, item, activity, followers, logger);
             }
         }
 
-        private static void UpdateActivitiesFromGoogleCalendar(ILog logger, CalendarService service, string calendarId, IActivityService activityService)
+        private static void UpdateActivitiesFromGoogleCalendar(ILog logger, CalendarService service, IActivityService activityService, string calendarId)
         {
-            EventsResource.ListRequest request = service.Events.List(calendarId);
-            request.TimeMin = DateTime.Now;
-            // request.TimeMax = DateTime.Now.AddMinutes(-GetBeforeMinuitesModifiedDate());
-            request.ShowDeleted = false;
-            request.SingleEvents = true;
-            request.MaxResults = 100;
-            request.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
-
-            // List events.
-            Events events = request.Execute();
+            Events events = FindEvents(logger, service, calendarId);
             if (events != null)
             {
                 foreach (var item in events.Items)
@@ -155,7 +156,6 @@ namespace FAAD.Calendar
                     try
                     {
                         bool updated = false;
-
                         activity = activityService.GetActivityById(item.ICalUID);
                         //activity = activityService.GetActivityById("23e8f5c6-283c-4826-9e80-e5dce15fdefc");
                         if (activity != null)
@@ -197,26 +197,50 @@ namespace FAAD.Calendar
             }
         }
 
-        private static string FindEventId(CalendarService service, string calendarId, string iCalUID)
+        private static Events FindEvents(ILog logger, CalendarService service, string calendarId)
         {
             EventsResource.ListRequest request = service.Events.List(calendarId);
             request.TimeMin = DateTime.Now;
             request.ShowDeleted = false;
             request.SingleEvents = true;
+            request.MaxResults = 100;
+            request.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
+            try
+            {
+                // List events.
+                return request.Execute();
+            } catch (Exception e)
+            {
+                logger.Info($"Not found:CalendarId:{calendarId}  Error:{e.Message}{e.StackTrace}");
+                return null;
+            }
+        }
+
+        private static string FindEventId(ILog logger, CalendarService service, string calendarId, string iCalUID)
+        {
+            EventsResource.ListRequest request = service.Events.List(calendarId);
+            request.ShowDeleted = false;
+            request.SingleEvents = true;
             request.ICalUID = iCalUID;
-            request.MaxResults = 10;
+            request.MaxResults = 1;
             request.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
 
             // List events.
-            Events events = request.Execute();
-            string eventId = string.Empty;
-            foreach (var item in events.Items)
+            try
             {
-                eventId = item.Id;
-                break;
+                Events events = request.Execute();
+                string eventId = string.Empty;
+                foreach (var item in events.Items)
+                {
+                    eventId = item.Id;
+                    break;
+                }
+                return eventId;
+            } catch (Exception e)
+            {
+                logger.Info($"Now found Activity Id:{iCalUID} CalendarId:{calendarId} in Google Calendar Error:{e.Message}{e.StackTrace}");
+                return string.Empty;
             }
-            return eventId;
-
         }
 
         private static int GetBeforeMinuitesModifiedDate()
@@ -227,6 +251,10 @@ namespace FAAD.Calendar
         {
             return ConfigurationManager.AppSettings["TimeZone"];
         }
+        private static string GetDefaultCalendarId()
+        {
+            return ConfigurationManager.AppSettings["DefaultCalendarId"];
+        }
         private static bool IsFacebookCalendarType()
         {
             return ConfigurationManager.AppSettings["CalendarType"].Equals("Facebook");
@@ -235,6 +263,11 @@ namespace FAAD.Calendar
         private static bool GetEventReminderEmail()
         {
             return ConfigurationManager.AppSettings["EventReminderEmail"].Equals("Y");
+        }
+
+        private static bool UsedDefaultCalendarId()
+        {
+            return ConfigurationManager.AppSettings["UsedDefaultCalendarId"].Equals("Y");
         }
         private static int GetEventReminderEmailMinutes()
         {
@@ -272,9 +305,8 @@ namespace FAAD.Calendar
 
         }
 
-        private static void CreateNewEvent(CalendarService service, string calendarId, CrmActivityDto activity, List<EventAttendee> eventAttendees, ILog logger)
+        private static void CreateNewEvent(CalendarService service, string calendarId, SmEmployee employee, CrmActivityDto activity, List<EventAttendee> eventAttendees, ILog logger)
         {
-
 
             var overrides = new List<EventReminder>();
             if (GetEventReminderEmail())
@@ -288,6 +320,7 @@ namespace FAAD.Calendar
 
 
             string summary = $"{activity.Topic} [ความสำคัญ:{activity.PriorityEnumName}][สถานะ:{activity.StatusEnumName}] ".Replace(System.Environment.NewLine, string.Empty);
+            var endDateTime = activity.EndDateTime == null ? activity.StartDateTime : activity.EndDateTime.Value;
             Event newEvent = new Event()
             {
                 ICalUID = activity.ActivityId,
@@ -304,10 +337,17 @@ namespace FAAD.Calendar
                 },
                 End = new EventDateTime()
                 {
-                    DateTime = activity.EndDateTime,
+                    DateTime = endDateTime,
                     TimeZone = GetTimeZone(),
                 },
                 Attendees = eventAttendees,
+                CreatedRaw = DateTime.Now.ToString("yyyy-MM-dd'T'HH:mm:ss.fffzzz", DateTimeFormatInfo.InvariantInfo),
+                Visibility = "default",
+                Organizer = new Event.OrganizerData
+                {
+                    Email = employee.Email,
+                    DisplayName = $"{employee.EmpFirstName} {employee.EmpLastName}",
+                },
                 Reminders = new Event.RemindersData()
                 {
                     UseDefault = false,
@@ -315,11 +355,12 @@ namespace FAAD.Calendar
                 }
             };
 
+
             EventsResource.InsertRequest insertRequest = service.Events.Insert(newEvent, calendarId);
             try
             {
                 Event createdEvent = insertRequest.Execute();
-                logger.Info($"Event Id:{createdEvent.Id}");
+                logger.Info($"CalendarId:{calendarId} Event Id:{newEvent.ICalUID} has been inserted successful.");
             }
             catch (Exception e)
             {
@@ -328,10 +369,44 @@ namespace FAAD.Calendar
 
         }
 
-        private static void UpdateNewEvent(CalendarService service, string calendarId, CrmActivityDto activity, List<EventAttendee> eventAttendees, string eventId, ILog logger)
+
+        private static void CreateNewCalendar(ILog logger, CalendarService service, SmEmployee smEmployee)
         {
+            string calendarId = IsFacebookCalendarType() ? smEmployee.Facebook : smEmployee.Email;
+            var newCalendar = new Google.Apis.Calendar.v3.Data.Calendar()
+            {
+                Summary = $"[{smEmployee.EmpNo}] {smEmployee.EmpFirstName} {smEmployee.EmpLastName} ({smEmployee.EmpNickName})",
+                Location = $"{smEmployee.AddrLine} แขวง{smEmployee.SubDistrict} เขต{smEmployee.District} จังหวัด{smEmployee.Province} {smEmployee.PostCode}",
+                TimeZone = GetTimeZone(),
+                Id = calendarId
+            };
+
+            CalendarsResource.InsertRequest insertCalendar = service.Calendars.Insert(newCalendar);
+            try
+            {
+                insertCalendar.Execute();
+            }
+            catch (Exception e)
+            {
+                logger.Error($"Insert Calendar:{smEmployee.Email} Error:{e.Message}{e.StackTrace}");
+            }
+        }
+
+        private static Google.Apis.Calendar.v3.Data.Calendar GetCalendar(ILog logger,CalendarService service, string calendarId)
+        {
+            try
+            {
+                return service.Calendars.Get(calendarId).Execute();
+            } catch (Exception e)
+            {
+                logger.Info($"System don't found Calendar: {calendarId} Message:{e.Message}");
+                return null;
+            }
+        }
 
 
+        private static void UpdateNewEvent(CalendarService service, string calendarId,SmEmployee employee, CrmActivityDto activity, List<EventAttendee> eventAttendees, string eventId, ILog logger)
+        {
             var overrides = new List<EventReminder>();
             if (GetEventReminderEmail())
             {
@@ -344,6 +419,7 @@ namespace FAAD.Calendar
 
 
             string summary = $"{activity.Topic} [ความสำคัญ:{activity.PriorityEnumName}][สถานะ:{activity.StatusEnumName}] ".Replace(System.Environment.NewLine, string.Empty);
+            var endDateTime = activity.EndDateTime == null ? activity.StartDateTime : activity.EndDateTime.Value;
             Event newEvent = new Event()
             {
                 ICalUID = activity.ActivityId,
@@ -360,10 +436,17 @@ namespace FAAD.Calendar
                 },
                 End = new EventDateTime()
                 {
-                    DateTime = activity.EndDateTime,
+                    DateTime = endDateTime,
                     TimeZone = GetTimeZone(),
                 },
+                Updated = DateTime.Now,
                 Attendees = eventAttendees,
+                Visibility = "default",
+                Organizer = new Event.OrganizerData
+                {
+                    Email = employee.Email,
+                    DisplayName = $"{employee.EmpFirstName} {employee.EmpLastName}",
+                },
                 Reminders = new Event.RemindersData()
                 {
                     UseDefault = false,
@@ -375,7 +458,7 @@ namespace FAAD.Calendar
             try
             {
                 Event updatedEvent = updateRequest.Execute();
-                logger.Info($"Event Id:{updatedEvent.Id}");
+                logger.Info($"CalendarId:{calendarId} Event Id:{newEvent.ICalUID} has been updated successful.");
             }
             catch (Exception e)
             {
@@ -385,18 +468,7 @@ namespace FAAD.Calendar
         }
 
 
-        private static void DeleteNewEvent(CalendarService service, string calendarId, CrmActivityDto activity, string eventId, ILog logger)
-        {
-            EventsResource.DeleteRequest deleteRequest = service.Events.Delete(calendarId, eventId);
-            try
-            {
-                deleteRequest.Execute();
-            }
-            catch (Exception e)
-            {
-                logger.Error($"Delete Event Id:{activity.ActivityId} CalendarId:{calendarId}  Error:{e.Message}{e.StackTrace}");
-            }
-        }
+
     }
 }
 
