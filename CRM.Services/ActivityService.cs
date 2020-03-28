@@ -46,14 +46,15 @@ namespace CRM.Services
         /// </summary>
         /// <param name="activityId">Activity identifier</param>
         /// <returns>Activity</returns>
-        public virtual IList<CrmActivityDto> GetActivityByOwner(string ownerId, int BeforeMinuitesModifiedDate)
+        public virtual IList<CrmActivityDto> GetActivityByOwner(string ownerId, bool checkMinutes, int BeforeMinuitesModifiedDate)
         {
             if (string.IsNullOrWhiteSpace(ownerId))
                 return null;
 
             var query = _activityRepository.Table;
-            var activitys = query.Where(x => x.OwnerId == ownerId //).ToList();
-                                        && x.ModifiedDate >= DateTime.Now.AddMinutes(-BeforeMinuitesModifiedDate) ).ToList();
+            query = query.Where(x => x.OwnerId == ownerId);
+            if (checkMinutes) query = query.Where(x => x.ModifiedDate >= DateTime.Now.AddMinutes(-BeforeMinuitesModifiedDate));
+            var activitys = query.ToList();
             var activitysByOwner = new List<CrmActivityDto>();
             foreach (var item in activitys)
             {

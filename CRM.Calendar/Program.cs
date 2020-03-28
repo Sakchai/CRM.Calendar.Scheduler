@@ -133,7 +133,7 @@ namespace FAAD.Calendar
 
         private static void CreateOrUpdateEventsToGoogleCalendar(ILog logger, CalendarService service, SmEmployee item, IActivityService activityService, string calendarId)
         {
-            var activities = activityService.GetActivityByOwner(item.EmpId, GetBeforeMinuitesModifiedDate());
+            var activities = activityService.GetActivityByOwner(item.EmpId, CheckMinutesModifiedDate(), GetBeforeMinutesModifiedDate());
             foreach (var activity in activities)
             {
                 var followers = activityService.GetEmailsFollowID(activity.ActivityId);
@@ -243,9 +243,9 @@ namespace FAAD.Calendar
             }
         }
 
-        private static int GetBeforeMinuitesModifiedDate()
+        private static int GetBeforeMinutesModifiedDate()
         {
-            return Int32.Parse(ConfigurationManager.AppSettings["BeforeMinuitesModifiedDate"]);
+            return Int32.Parse(ConfigurationManager.AppSettings["BeforeMinutesModifiedDate"]);
         }
         private static string GetTimeZone()
         {
@@ -259,7 +259,11 @@ namespace FAAD.Calendar
         {
             return ConfigurationManager.AppSettings["CalendarType"].Equals("Facebook");
         }
-
+        private static bool CheckMinutesModifiedDate()
+        {
+            return ConfigurationManager.AppSettings["CheckMinutesModifiedDate"].Equals("Y");
+        }
+        
         private static bool GetEventReminderEmail()
         {
             return ConfigurationManager.AppSettings["EventReminderEmail"].Equals("Y");
