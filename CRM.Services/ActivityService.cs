@@ -18,6 +18,9 @@ namespace CRM.Services
         private readonly IEmployeeService _employeeService;
         private readonly IRepository<CrmActivity> _activityRepository;
         private readonly IRepository<SmEnum> _enumRepository;
+        private readonly IRepository<CrmActivityFacility> _crmActivityFacility;
+        private readonly IRepository<CrmActivityNote> _crmActivityNote;
+        private readonly IRepository<SmFacility> _smFacility;
         private readonly IMapper _mapper;
         #endregion
 
@@ -27,7 +30,10 @@ namespace CRM.Services
             IRepository<CrmActivityFollower> activityFollowerRepository,
             IEmployeeService employeeService,
             IRepository<SmEnum> enumRepository,
-            IMapper mapper
+            IMapper mapper,
+            IRepository<CrmActivityFacility> crmActivityFacility,
+            IRepository<CrmActivityNote> crmActivityNote,
+            IRepository<SmFacility> smFacility
             )
         {
             _activityRepository = activityRepository;
@@ -35,6 +41,9 @@ namespace CRM.Services
             _employeeService = employeeService;
             _enumRepository = enumRepository;
             _mapper = mapper;
+            _crmActivityFacility = crmActivityFacility;
+            _crmActivityNote = crmActivityNote;
+            _smFacility = smFacility;
         }
 
         #endregion
@@ -143,6 +152,59 @@ namespace CRM.Services
 
             var query = _activityRepository.Table;
             return query.Where(x => x.ActivityId == activityId).FirstOrDefault();
+        }
+
+        public List<string> GetNotes(string activityId)
+        {
+            if (string.IsNullOrWhiteSpace(activityId))
+                return null;
+            var query = _crmActivityNote.Table;
+            query = query.Where(x => x.ActivityId == activityId && !x.IsInactive.Value);
+            var notes = query.OrderBy(y => y.ListNo).ToList();
+            var result = new List<string>();
+            if (notes.Count > 0)
+            {
+                result.Add("<h4>Note</h4>");
+                result.Add("<table>");
+                result.Add($"<tr><th>ลำดับ</th><th>บันทึกเพิ่มเติม</th></tr>");
+                foreach (var item in notes)
+                {
+                    result.Add($"<tr><td>{item.ListNo}</td><td>{item.Note}</td></tr>");
+                }
+                result.Add("</table>");
+            }
+            return result;
+        }
+
+        private SmFacility GetFacility(string facilityId)
+        {
+            if (string.IsNullOrWhiteSpace(facilityId))
+                return null;
+            var query = _smFacility.Table;
+            return query.Where(x => x.FacilityId == facilityId).FirstOrDefault();
+        }
+
+        public List<string> GetFacilities(string activityId)
+        {
+            if (string.IsNullOrWhiteSpace(activityId))
+                return null;
+            var query = _crmActivityFacility.Table;
+            query = query.Where(x => x.ActivityId == activityId && !x.IsInactive.Value);
+            var facilities = query.OrderBy(y => y.FacilityId).ToList();
+            var result = new List<string>();
+            if (facilities.Count > 0)
+            {
+                result.Add("<h4>Facility</h4>");
+                result.Add("<table>");
+                result.Add($"<tr><th>หมายเลข</th><th>ชื่อ Facility</th><th>จำนวน(ชิ้น)</th></tr>");
+                foreach (var item in facilities)
+                {
+                    var facility = this.GetFacility(item.FacilityId);
+                    result.Add($"<tr><td>{facility.FacilityNo}</td><td>{facility.FacilityName}</td><td>{item.Qty}</td>");
+                }
+                result.Add("</table>");
+            }
+            return result;
         }
 
 

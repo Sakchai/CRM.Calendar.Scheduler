@@ -18,7 +18,15 @@
       },
       {
          "HasPrimaryKey": true,
+         "Name": "[dbo].[crmActivityFacility]"
+      },
+      {
+         "HasPrimaryKey": true,
          "Name": "[dbo].[crmActivityFollower]"
+      },
+      {
+         "HasPrimaryKey": true,
+         "Name": "[dbo].[crmActivityNote]"
       },
       {
          "HasPrimaryKey": true,
@@ -27,6 +35,10 @@
       {
          "HasPrimaryKey": true,
          "Name": "[dbo].[smEnum]"
+      },
+      {
+         "HasPrimaryKey": true,
+         "Name": "[dbo].[smFacility]"
       }
    ],
    "UseDatabaseNames": false,

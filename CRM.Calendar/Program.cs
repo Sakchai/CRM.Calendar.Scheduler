@@ -137,11 +137,12 @@ namespace FAAD.Calendar
             foreach (var activity in activities)
             {
                 var followers = activityService.GetEmailsFollowID(activity.ActivityId);
+                var notes = GetNotes(activityService, activity.ActivityId);
                 string eventId = FindEventId(logger, service, calendarId, activity.ActivityId);
                 if (!string.IsNullOrEmpty(eventId))
-                    UpdateNewEvent(service, calendarId, item, activity, followers, eventId, logger);
+                    UpdateNewEvent(service, calendarId, item, activity, followers, eventId, logger,notes);
                 else
-                    CreateNewEvent(service, calendarId, item, activity, followers, logger);
+                    CreateNewEvent(service, calendarId, item, activity, followers, logger,notes);
             }
         }
 
@@ -309,7 +310,7 @@ namespace FAAD.Calendar
 
         }
 
-        private static void CreateNewEvent(CalendarService service, string calendarId, SmEmployee employee, CrmActivityDto activity, List<EventAttendee> eventAttendees, ILog logger)
+        private static void CreateNewEvent(CalendarService service, string calendarId, SmEmployee employee, CrmActivityDto activity, List<EventAttendee> eventAttendees, ILog logger, string notes)
         {
 
             var overrides = new List<EventReminder>();
@@ -330,7 +331,7 @@ namespace FAAD.Calendar
                 ICalUID = activity.ActivityId,
                 Summary = summary,
                 Location = activity.RelateActName,
-                Description = activity.Detail,
+                Description = activity.Detail + notes,
                 Created = activity.ModifiedDate,
                 ColorId = GetPriorityColor(activity.PriorityEnumName),
                 Status = GetStatus(activity.StatusEnumName),
@@ -356,6 +357,10 @@ namespace FAAD.Calendar
                 {
                     UseDefault = false,
                     Overrides = overrides
+                },
+                ConferenceData = new ConferenceData
+                {
+                    Notes = notes
                 }
             };
 
@@ -373,7 +378,17 @@ namespace FAAD.Calendar
 
         }
 
-
+        private static string GetNotes(IActivityService activityService, string activityId)
+        {
+            string description = string.Empty;
+            List<string> notes = activityService.GetFacilities(activityId);
+            notes.AddRange(activityService.GetNotes(activityId));
+            foreach (var note in notes)
+            {
+                description += note;
+            }
+            return description;
+        }
         private static void CreateNewCalendar(ILog logger, CalendarService service, SmEmployee smEmployee)
         {
             string calendarId = IsFacebookCalendarType() ? smEmployee.Facebook : smEmployee.Email;
@@ -409,7 +424,7 @@ namespace FAAD.Calendar
         }
 
 
-        private static void UpdateNewEvent(CalendarService service, string calendarId,SmEmployee employee, CrmActivityDto activity, List<EventAttendee> eventAttendees, string eventId, ILog logger)
+        private static void UpdateNewEvent(CalendarService service, string calendarId,SmEmployee employee, CrmActivityDto activity, List<EventAttendee> eventAttendees, string eventId, ILog logger, string notes)
         {
             var overrides = new List<EventReminder>();
             if (GetEventReminderEmail())
@@ -424,12 +439,12 @@ namespace FAAD.Calendar
 
             string summary = $"{activity.Topic} [ความสำคัญ:{activity.PriorityEnumName}][สถานะ:{activity.StatusEnumName}] ".Replace(System.Environment.NewLine, string.Empty);
             var endDateTime = activity.EndDateTime == null ? activity.StartDateTime : activity.EndDateTime.Value;
-            Event newEvent = new Event()
+              Event newEvent = new Event()
             {
                 ICalUID = activity.ActivityId,
                 Summary = summary,
                 Location = activity.RelateActName,
-                Description = activity.Detail,
+                Description = activity.Detail + notes,
                 Created = activity.ModifiedDate,
                 ColorId = GetPriorityColor(activity.PriorityEnumName),
                 Status = GetStatus(activity.StatusEnumName),
@@ -443,6 +458,8 @@ namespace FAAD.Calendar
                     DateTime = endDateTime,
                     TimeZone = GetTimeZone(),
                 },
+
+                
                 Updated = DateTime.Now,
                 Attendees = eventAttendees,
                 Visibility = "default",
@@ -455,6 +472,10 @@ namespace FAAD.Calendar
                 {
                     UseDefault = false,
                     Overrides = overrides
+                },
+                ConferenceData = new ConferenceData
+                {
+                    Notes = notes
                 }
             };
 

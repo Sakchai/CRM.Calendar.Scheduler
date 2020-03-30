@@ -148,6 +148,8 @@
     <Compile Include="Core\BaseDataProvider.cs" />
     <Compile Include="Core\BaseEntity.cs" />
     <Compile Include="Core\BaseSingleton.cs" />
+    <Compile Include="Entities\CrmActivityFacility.cs" />
+    <Compile Include="Entities\CrmActivityNote.cs" />
     <Compile Include="Entities\CrmActivityFollower.cs" />
     <Compile Include="Entities\CrmActivity.cs" />
     <Compile Include="Core\DataProviderManager.cs" />
@@ -163,6 +165,7 @@
     <Compile Include="Core\Singleton.cs" />
     <Compile Include="Entities\SmEmployee.cs" />
     <Compile Include="Entities\SmEnum.cs" />
+    <Compile Include="Entities\SmFacility.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

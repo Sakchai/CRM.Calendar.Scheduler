@@ -17,9 +17,12 @@ namespace CRM.Model
         }
 
         public virtual DbSet<CrmActivity> CrmActivities { get; set; }
+        public virtual DbSet<CrmActivityFacility> CrmActivityFacilities { get; set; }
         public virtual DbSet<CrmActivityFollower> CrmActivityFollowers { get; set; }
+        public virtual DbSet<CrmActivityNote> CrmActivityNotes { get; set; }
         public virtual DbSet<SmEmployee> SmEmployees { get; set; }
         public virtual DbSet<SmEnum> SmEnums { get; set; }
+        public virtual DbSet<SmFacility> SmFacilities { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -126,8 +129,41 @@ namespace CRM.Model
                     .HasMaxLength(50);
 
                 entity.Property(e => e.Topic).HasMaxLength(255);
+            });
 
+            modelBuilder.Entity<CrmActivityFacility>(entity =>
+            {
+                entity.HasKey(e => e.ActivityFacilityId)
+                    .HasName("PK__crmActiv__9655DE8CEAA5C163");
 
+                entity.ToTable("crmActivityFacility");
+
+                entity.Property(e => e.ActivityFacilityId)
+                    .HasColumnName("ActivityFacilityID")
+                    .HasMaxLength(50)
+                    .ValueGeneratedNever();
+
+                entity.Property(e => e.ActivityId)
+                    .HasColumnName("ActivityID")
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.CreatedById)
+                    .HasColumnName("CreatedByID")
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.CreatedDate).HasColumnType("datetime");
+
+                entity.Property(e => e.FacilityId)
+                    .HasColumnName("FacilityID")
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.ModifiedById)
+                    .HasColumnName("ModifiedByID")
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.ModifiedDate).HasColumnType("datetime");
+
+                entity.Property(e => e.Qty).HasColumnType("decimal(28, 6)");
             });
 
             modelBuilder.Entity<CrmActivityFollower>(entity =>
@@ -161,6 +197,37 @@ namespace CRM.Model
                     .HasMaxLength(50);
 
                 entity.Property(e => e.ModifiedDate).HasColumnType("datetime");
+            });
+
+            modelBuilder.Entity<CrmActivityNote>(entity =>
+            {
+                entity.HasKey(e => e.ActivityNoteId)
+                    .HasName("PK__crmActiv__489E6603B1F4654F");
+
+                entity.ToTable("crmActivityNote");
+
+                entity.Property(e => e.ActivityNoteId)
+                    .HasColumnName("ActivityNoteID")
+                    .HasMaxLength(50)
+                    .ValueGeneratedNever();
+
+                entity.Property(e => e.ActivityId)
+                    .HasColumnName("ActivityID")
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.CreatedById)
+                    .HasColumnName("CreatedByID")
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.CreatedDate).HasColumnType("datetime");
+
+                entity.Property(e => e.ModifiedById)
+                    .HasColumnName("ModifiedByID")
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.ModifiedDate).HasColumnType("datetime");
+
+                entity.Property(e => e.Note).HasColumnType("ntext");
             });
 
             modelBuilder.Entity<SmEmployee>(entity =>
@@ -236,7 +303,7 @@ namespace CRM.Model
                     .HasColumnName("EmpTypeEnumID")
                     .HasMaxLength(50);
 
-                entity.Property(e => e.Facebook).HasMaxLength(50);
+                entity.Property(e => e.Facebook).HasMaxLength(100);
 
                 entity.Property(e => e.Fax).HasMaxLength(50);
 
@@ -318,6 +385,37 @@ namespace CRM.Model
                     .IsRequired()
                     .HasColumnName("EnumTypeID")
                     .HasMaxLength(50);
+
+                entity.Property(e => e.ModifiedById)
+                    .HasColumnName("ModifiedByID")
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.ModifiedDate).HasColumnType("datetime");
+
+                entity.Property(e => e.Remark).HasColumnType("ntext");
+            });
+
+            modelBuilder.Entity<SmFacility>(entity =>
+            {
+                entity.HasKey(e => e.FacilityId)
+                    .HasName("PK__smFacili__5FB08B94472DABE4");
+
+                entity.ToTable("smFacility");
+
+                entity.Property(e => e.FacilityId)
+                    .HasColumnName("FacilityID")
+                    .HasMaxLength(50)
+                    .ValueGeneratedNever();
+
+                entity.Property(e => e.CreatedById)
+                    .HasColumnName("CreatedByID")
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.CreatedDate).HasColumnType("datetime");
+
+                entity.Property(e => e.FacilityName).HasMaxLength(255);
+
+                entity.Property(e => e.FacilityNo).HasMaxLength(50);
 
                 entity.Property(e => e.ModifiedById)
                     .HasColumnName("ModifiedByID")

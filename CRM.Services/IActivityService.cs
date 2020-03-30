@@ -22,6 +22,8 @@ namespace CRM.Services
         List<EventAttendee> GetEmailsFollowID(string activityId);
         string GetStatusOrPriorityName(string enumId);
 
+        List<string> GetNotes(string activityId);
+        List<string> GetFacilities(string activityId);
         /// <summary>
         /// Marks activity as deleted 
         /// </summary>
