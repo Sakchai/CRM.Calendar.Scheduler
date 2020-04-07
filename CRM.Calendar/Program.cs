@@ -151,15 +151,17 @@ namespace FAAD.Calendar
             Events events = FindEvents(logger, service, calendarId);
             if (events != null)
             {
+                logger.Info($"Update Calendar Id from Google:{calendarId} count:{events.Items.Count} ");
                 foreach (var item in events.Items)
                 {
                     var activity = new CrmActivity();
                     try
                     {
                         bool updated = false;
-                        activity = activityService.GetActivityById(item.ICalUID);
+                        if (!string.IsNullOrWhiteSpace(item.ICalUID))
+                             activity = activityService.GetActivityById(item.ICalUID);
                         //activity = activityService.GetActivityById("23e8f5c6-283c-4826-9e80-e5dce15fdefc");
-                        if (activity != null)
+                        if (!string.IsNullOrWhiteSpace(activity.ActivityId))
                         {
                             var startDateTime = activity.StartDate + activity.StartTime;
                             var endDateTime = activity.EndDate + activity.EndTime;
@@ -175,12 +177,12 @@ namespace FAAD.Calendar
                                 activity.StartDate = item.Start.DateTime.Value.Date;
                                 activity.StartTime = item.Start.DateTime.Value.TimeOfDay;
                             }
-                            if (!item.Summary.Contains(activity.Topic))
+                            if (!string.IsNullOrWhiteSpace(item.Summary) && !item.Summary.Contains(activity.Topic))
                             {
                                 updated = true;
                                 activity.Topic = item.Summary;
                             }
-                            if (!item.Description.Contains(activity.Detail))
+                            if (!string.IsNullOrWhiteSpace(item.Description) && (!item.Description.Contains(activity.Detail)))
                             {
                                 updated = true;
                                 activity.Detail = item.Description;
@@ -201,7 +203,9 @@ namespace FAAD.Calendar
         private static Events FindEvents(ILog logger, CalendarService service, string calendarId)
         {
             EventsResource.ListRequest request = service.Events.List(calendarId);
-            request.TimeMin = DateTime.Now;
+            //request.TimeMin = DateTime.Now;
+            request.UpdatedMin = DateTime.Now.AddMinutes(-GetBeforeMinutesModifiedDate());
+            request.TimeZone = GetTimeZone();
             request.ShowDeleted = false;
             request.SingleEvents = true;
             request.MaxResults = 100;
@@ -212,7 +216,7 @@ namespace FAAD.Calendar
                 return request.Execute();
             } catch (Exception e)
             {
-                logger.Info($"Not found:CalendarId:{calendarId}  Error:{e.Message}{e.StackTrace}");
+                logger.Info($"Not found data:CalendarId:{calendarId}  Error:{e.Message}{e.StackTrace}");
                 return null;
             }
         }
@@ -331,7 +335,7 @@ namespace FAAD.Calendar
                 ICalUID = activity.ActivityId,
                 Summary = summary,
                 Location = activity.RelateActName,
-                Description = activity.Detail + notes,
+                Description = activity.Detail,
                 Created = activity.ModifiedDate,
                 ColorId = GetPriorityColor(activity.PriorityEnumName),
                 Status = GetStatus(activity.StatusEnumName),
@@ -360,8 +364,9 @@ namespace FAAD.Calendar
                 },
                 ConferenceData = new ConferenceData
                 {
-                    Notes = notes
-                }
+                    Notes = notes,
+                },
+                AnyoneCanAddSelf = true,
             };
 
 
@@ -444,7 +449,7 @@ namespace FAAD.Calendar
                 ICalUID = activity.ActivityId,
                 Summary = summary,
                 Location = activity.RelateActName,
-                Description = activity.Detail + notes,
+                Description = activity.Detail,
                 Created = activity.ModifiedDate,
                 ColorId = GetPriorityColor(activity.PriorityEnumName),
                 Status = GetStatus(activity.StatusEnumName),
