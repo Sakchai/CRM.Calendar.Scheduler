@@ -139,8 +139,10 @@ namespace CRM.Services
                 var emp = _employeeService.GetEmployeeByID(item.EmpId);
                 string fullname = $"{emp.EmpFirstName} {emp.EmpLastName}";
                 //employeeFollowers.Add(new EmployeeFollowerDto { DisplayName = fullname, Email = emp.Email });
+                //employeeFollowers.Add(new EventAttendee
+                //{ DisplayName = fullname, Email = emp.Email });
                 employeeFollowers.Add(new EventAttendee
-                { DisplayName = fullname, Email = emp.Email });
+                { DisplayName = fullname, Email = emp.Facebook });
             }
             return employeeFollowers;
         }
