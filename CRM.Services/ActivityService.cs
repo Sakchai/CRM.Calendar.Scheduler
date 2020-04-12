@@ -141,8 +141,9 @@ namespace CRM.Services
                 //employeeFollowers.Add(new EmployeeFollowerDto { DisplayName = fullname, Email = emp.Email });
                 //employeeFollowers.Add(new EventAttendee
                 //{ DisplayName = fullname, Email = emp.Email });
-                employeeFollowers.Add(new EventAttendee
-                { DisplayName = fullname, Email = emp.Facebook });
+                if (!string.IsNullOrWhiteSpace(emp.Facebook))
+                    employeeFollowers.Add(new EventAttendee
+                    { DisplayName = fullname, Email = emp.Facebook });
             }
             return employeeFollowers;
         }

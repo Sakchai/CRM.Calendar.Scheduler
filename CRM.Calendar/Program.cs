@@ -354,7 +354,7 @@ namespace FAAD.Calendar
                 Visibility = "default",
                 Organizer = new Event.OrganizerData
                 {
-                    Email = employee.Email,
+                    Email = employee.Facebook,
                     DisplayName = $"{employee.EmpFirstName} {employee.EmpLastName}",
                 },
                 Reminders = new Event.RemindersData()
@@ -470,7 +470,7 @@ namespace FAAD.Calendar
                 Visibility = "default",
                 Organizer = new Event.OrganizerData
                 {
-                    Email = employee.Email,
+                    Email = employee.Facebook,
                     DisplayName = $"{employee.EmpFirstName} {employee.EmpLastName}",
                 },
                 Reminders = new Event.RemindersData()
