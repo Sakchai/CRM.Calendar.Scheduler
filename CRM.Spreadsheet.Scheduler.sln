@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CRM.Services", "CRM.Service
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CRM.Calendar", "CRM.Calendar\CRM.Calendar.csproj", "{DDE818CF-6F28-4D4C-A779-C1469FC41BE9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CRM.Spreadsheet", "CRM.Spreadsheet\CRM.Spreadsheet.csproj", "{CF37632C-6664-4933-84B7-6DC549B182CB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{DDE818CF-6F28-4D4C-A779-C1469FC41BE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DDE818CF-6F28-4D4C-A779-C1469FC41BE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DDE818CF-6F28-4D4C-A779-C1469FC41BE9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF37632C-6664-4933-84B7-6DC549B182CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF37632C-6664-4933-84B7-6DC549B182CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF37632C-6664-4933-84B7-6DC549B182CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF37632C-6664-4933-84B7-6DC549B182CB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

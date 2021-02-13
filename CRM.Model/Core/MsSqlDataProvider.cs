@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
@@ -62,7 +63,7 @@ namespace CRM.Model
 
         protected virtual SqlConnectionStringBuilder GetConnectionStringBuilder()
         {
-            var connectionString = "Data Source=.;Initial Catalog=FAAD2;Integrated Security=True";
+            var connectionString = ConfigurationManager.AppSettings["ConnectionString"];
 
             return new SqlConnectionStringBuilder(connectionString);
         }
@@ -78,6 +79,10 @@ namespace CRM.Model
         /// <returns>Connection to a database</returns>
         public override IDbConnection CreateDbConnection(string connectionString = null)
         {
+
+            connectionString = string.IsNullOrEmpty(connectionString) ? ConfigurationManager.AppSettings["ConnectionString"] : string.Empty;
+
+
             return new SqlConnection(!string.IsNullOrEmpty(connectionString) ? connectionString : CurrentConnectionString);
         }
 
@@ -139,6 +144,7 @@ namespace CRM.Model
         {
             try
             {
+
                 using (var connection = new SqlConnection(GetConnectionStringBuilder().ConnectionString))
                 {
                     //just try to connect
