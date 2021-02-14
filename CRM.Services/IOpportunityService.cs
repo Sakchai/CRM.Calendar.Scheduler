@@ -7,5 +7,7 @@ namespace CRM.Services
         DataTable OpportunityReport();
         DataTable OpportunityActivityReport();
         DataTable OpportunityStageProgress();
+
+        DataTable OpportunityReportGoods();
     }
 }

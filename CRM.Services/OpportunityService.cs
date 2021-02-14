@@ -49,6 +49,28 @@ namespace CRM.Services
 
         }
 
+        public DataTable OpportunityReportGoods()
+        {
+            DataTable dt = new DataTable();
+            string spName = ConfigurationManager.AppSettings["OpportunityReportGoodsSP"];
+            string connectionString = ConfigurationManager.AppSettings["ConnectionString"];
+            using (var conn = new SqlConnection(connectionString))
+            {
+                using (var cmd = new SqlCommand(spName, conn)
+                {
+                    CommandType = CommandType.StoredProcedure
+                })
+                {
+                    conn.Open();
+                    SqlDataAdapter da = new SqlDataAdapter(cmd);
+
+                    da.Fill(dt);
+
+                }
+            }
+            return dt;
+
+        }
 
         public DataTable OpportunityStageProgress()
         {

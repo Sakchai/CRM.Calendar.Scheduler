@@ -29,32 +29,46 @@ namespace CRM.Spreadsheet
 
             var builder = new ContainerBuilder();
             builder.RegisterType<OpportunityService>().As<IOpportunityService>().InstancePerLifetimeScope();
-      
 
-            using (var container = builder.Build())
+            try
             {
-                var opportunityService = container.Resolve<IOpportunityService>();
+                using (var container = builder.Build())
+                {
+                    var opportunityService = container.Resolve<IOpportunityService>();
 
-                DataTable table = opportunityService.OpportunityReport();
+                    DataTable table = opportunityService.OpportunityReport();
 
-                string opportunityReportPath = ConfigurationManager.AppSettings["OpportunityReportPath"];
-                string OpportunityReportName = ConfigurationManager.AppSettings["OpportunityReportName"];
-                string fileName = $"{opportunityReportPath}{OpportunityReportName}.xlsx";
-                CreateOpportunityReport(table, opportunityReportPath, fileName);
+                    string opportunityReportPath = ConfigurationManager.AppSettings["OpportunityReportPath"];
+                    string OpportunityReportName = ConfigurationManager.AppSettings["OpportunityReportName"];
+                    string fileName = $"{opportunityReportPath}{OpportunityReportName}.xlsx";
+                    CreateOpportunityReport(table, opportunityReportPath, fileName);
+                    logger.Info("OpportunityReport done.");
 
+                    table = opportunityService.OpportunityActivityReport();
+                    opportunityReportPath = ConfigurationManager.AppSettings["OpportunityActivityReportPath"];
+                    OpportunityReportName = ConfigurationManager.AppSettings["OpportunityActivityReportName"];
+                    fileName = $"{opportunityReportPath}{OpportunityReportName}.xlsx";
+                    CreateOpportunityReport(table, opportunityReportPath, fileName);
+                    logger.Info("OpportunityActivityReport done.");
 
-                table = opportunityService.OpportunityActivityReport();
-                opportunityReportPath = ConfigurationManager.AppSettings["OpportunityActivityReportPath"];
-                OpportunityReportName = ConfigurationManager.AppSettings["OpportunityActivityReportName"];
-                fileName = $"{opportunityReportPath}{OpportunityReportName}.xlsx";
-                CreateOpportunityReport(table, opportunityReportPath, fileName);
+                    table = opportunityService.OpportunityStageProgress();
+                    opportunityReportPath = ConfigurationManager.AppSettings["OpportunityStageProgressPath"];
+                    OpportunityReportName = ConfigurationManager.AppSettings["OpportunityStageProgressName"];
+                    fileName = $"{opportunityReportPath}{OpportunityReportName}.xlsx";
+                    CreateOpportunityReport(table, opportunityReportPath, fileName);
+                    logger.Info("OpportunityStageProgress done.");
 
-                table = opportunityService.OpportunityStageProgress();
-                opportunityReportPath = ConfigurationManager.AppSettings["OpportunityStageProgressPath"];
-                OpportunityReportName = ConfigurationManager.AppSettings["OpportunityStageProgressName"];
-                fileName = $"{opportunityReportPath}{OpportunityReportName}.xlsx";
-                CreateOpportunityReport(table, opportunityReportPath, fileName);
-
+                    table = opportunityService.OpportunityReportGoods();
+                    opportunityReportPath = ConfigurationManager.AppSettings["OpportunityReportGoodsPath"];
+                    OpportunityReportName = ConfigurationManager.AppSettings["OpportunityReportGoodsName"];
+                    fileName = $"{opportunityReportPath}{OpportunityReportName}.xlsx";
+                    CreateOpportunityReport(table, opportunityReportPath, fileName);
+                    logger.Info("OpportunityReportAEOM done.");
+                }
+            }
+            catch (Exception e)
+            {
+                logger.Error($"Error:{e.Message}{e.StackTrace}");
             }
         }
 
